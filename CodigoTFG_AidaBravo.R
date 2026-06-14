@@ -1605,7 +1605,8 @@ medias_barrios_partidos <- ef_entire_norm %>%
          EF_CENTRADO, INTERPRETACION, DISTANCIA_UNION)
 
 # Leemos la capa oficial de barrios de QGIS
-barrios_qgis <- st_read("0301040100_Barris_UNITATS_ADM.shp", quiet = TRUE) %>%
+barrios_qgis <- st_read(file.path(dir_datos,"0301040100_Barris_UNITATS_ADM.shp")
+                        , quiet = TRUE) %>%
   st_transform(st_crs(peuat)) %>%
   st_drop_geometry() %>%
   select(NOM) %>%
