@@ -14,9 +14,16 @@ library(stringi)     # Tratamiento avanzado de normalización de textos.
 library(fuzzyjoin)   # Unión de tablas según similitud entre textos.
 
 # ==============================================================================
+# 0. CONFIGURACIÓN GENERAL DEL PROYECTO
+# ==============================================================================
+dir_datos    <- "Datos"
+dir_graficos <- "Gráficos"
+
+# ==============================================================================
 # 1. CARGAMOS LOS DATOS
 # ==============================================================================
-air <- read_csv("AirbnbBarcelonaOrig.csv", show_col_types = FALSE)
+air <- read_csv(file.path(dir_datos, "AirbnbBarcelonaOrig.csv"),
+                show_col_types = FALSE)
 colnames(air)
 
 air <- air %>% as_tibble() %>%
@@ -80,7 +87,7 @@ air <- air %>%
 # 1.1 ASIGNACIÓN DE ZONA PEUAT
 # ==============================================================================
 # Cargamos la capa de zonas PEUAT
-peuat <- st_read("zonasPEUAT.gpkg", layer = "BasePEUAT_")
+peuat <- st_read(file.path(dir_datos, "zonasPEUAT.gpkg"), layer = "BasePEUAT_")
 
 # Convertimos Airbnb en objeto espacial(sf) usando las coordenadas lat. y long.
 air_sf <- st_as_sf(air,                          
@@ -118,7 +125,8 @@ table(air$ZONA_PEUAT, useNA = "ifany")
 # ==============================================================================
 # 1.2 CARGA DE BARRIOS
 # ==============================================================================
-barris <- st_read("0301040100_Barris_UNITATS_ADM.shp", quiet = TRUE) %>%
+barris <- st_read(file.path(dir_datos, "0301040100_Barris_UNITATS_ADM.shp"), 
+                  quiet = TRUE) %>%
   st_transform(st_crs(peuat)) %>%
   # Nos quedamos con los barrios, sus geometrías y el area de cada barrio
   select(NOM, geometry, AREA) %>%
@@ -317,7 +325,7 @@ g1 <- g1 +
       plot.subtitle = element_text(hjust = 0.5,size = 14),
       plot.background = element_rect(fill = "transparent", color = NA)))
 g1
-ggsave("C:/Users/Tester2/Desktop/TFG/Gráficos/Graf1.png",g1,width = 12,
+ggsave(file.path(dir_graficos, "Graf1.png"),g1,width = 12,
        height = 10,dpi = 500, bg = "transparent")
 
 # ==============================================================================
@@ -373,7 +381,7 @@ asignar_barrio_partido <- function(Nom_Barri, SEC_NUM) {
 # 2.1 CONSTRUCTO 1: POBLACIÓN TOTAL --> PROXY 1: POBLACIÓN
 # ==============================================================================
 # La población se utiliza como proxy del tamaño demográfico de cada barrio.
-filesp <- list.files("POBLACION",full.names = TRUE)
+filesp <- list.files(file.path(dir_datos, "POBLACION"),full.names = TRUE)
 
 poblacion <- map_dfr(filesp, function(f) {
     read_csv(f, show_col_types = FALSE) %>%
@@ -426,7 +434,7 @@ poblacion_final <- bind_rows(poblacion_np, poblacion_p) %>%
 # ------------------------------------------------------------------------------
 # 2.2.1 PROXY 2: INMIGRACION
 # ------------------------------------------------------------------------------
-filesi <- list.files("INMIGRACION", full.names = TRUE)
+filesi <- list.files(file.path(dir_datos, "INMIGRACION"), full.names = TRUE)
 
 inmigracion <- map_dfr(filesi, function(f) {
   read_csv(f, show_col_types = FALSE) %>%
@@ -483,7 +491,7 @@ inmigracion_final <- bind_rows(inmigracion_np, inmigracion_p) %>%
 # La movilidad interna no está disponible a nivel de sección censal, sino a nivel
 # de barrio administrativo original. Por ello, en los barrios partidos se replica
 # el mismo valor de movilidad neta para las dos partes Nord/Sud del barrio.
-filesm <- list.files("MOVILIDAD", full.names = TRUE)
+filesm <- list.files(file.path(dir_datos, "MOVILIDAD"), full.names = TRUE)
 
 movilidad <- map_dfr(filesm, function(f) {
   read_csv(f, show_col_types = FALSE) %>%
@@ -546,7 +554,7 @@ movilidad_final <- movilidad_original %>%
 # ------------------------------------------------------------------------------
 # 2.3.1 PROXY 4: RENTA_MEDIA
 # ------------------------------------------------------------------------------
-filesr <- list.files("RENDA_BRUTA_PERSONA", full.names = TRUE)
+filesr <- list.files(file.path(dir_datos, "RENDA_BRUTA_PERSONA"), full.names = TRUE)
 
 renta <- map_dfr(filesr, function(f) {
   read_csv(f, show_col_types = FALSE) %>%
@@ -613,7 +621,7 @@ renta_final <- bind_rows(renta_np, renta_p) %>%
 # ------------------------------------------------------------------------------
 # 2.3.2 PROXY 5: GINI
 # ------------------------------------------------------------------------------
-filesg <- list.files("GINI", full.names = TRUE)
+filesg <- list.files(file.path(dir_datos, "GINI"), full.names = TRUE)
 
 gini <- map_dfr(filesg, function(f) {
   read_csv(f, show_col_types = FALSE) %>%
@@ -1015,7 +1023,7 @@ grafico2 <- (g1 | g2) / (g3 | g4) +
 
 grafico2
 
-ggsave(filename = "C:/Users/Tester2/Desktop/TFG/Gráficos/Graf2.png",
+ggsave(file.path(dir_graficos, "Graf2.png"),
        plot = grafico2,width = 11, height = 6.5,dpi = 500, bg = "transparent")
 
 # ==============================================================================
@@ -1228,7 +1236,7 @@ grafico3_1 <- ggplot(graf3_1_data,
 
 grafico3_1
 
-ggsave("C:/Users/Tester2/Desktop/TFG/Gráficos/Graf3_1.png",
+ggsave(file.path(dir_graficos, "Graf3_1.png"),
        grafico3_1,width = 11,height = 6.5,dpi = 500,bg = "transparent")
 
 # ------------------------------------------------------------------------------
@@ -1241,7 +1249,7 @@ gbp_multihost <- grafico3(
   y_label = "Proporción multihost",
   titulo = "Distribución de la proporción multihost antes y después del PEUAT",
   subtitulo = "Comparación por tipo de alojamiento y zona de análisis",
-  nombre = "C:/Users/Tester2/Desktop/TFG/Gráficos/Graf3_2.png",
+  nombre = file.path(dir_graficos, "Graf3_2.png"),
   escala_y = 1,
   ejey_fijo = TRUE)
 
@@ -1257,7 +1265,7 @@ gbp_license <- grafico3(
   y_label = "Proporción con licencia",
   titulo = "Distribución de la proporción con licencia antes y después del PEUAT",
   subtitulo = "Comparación por tipo de alojamiento y zona de análisis",
-  nombre = "C:/Users/Tester2/Desktop/TFG/Gráficos/Graf3_3.png",
+  nombre = file.path(dir_graficos, "Graf3_3.png"),
   escala_y = 1,
   ejey_fijo = TRUE)
 
@@ -1369,7 +1377,7 @@ gbp_inmigracion <- grafico4(
   y_label = "Inmigración",
   titulo = "Distribución de la inmigración antes y después del PEUAT",
   subtitulo = "Comparación entre zonas tratadas y zona de control",
-  nombre = "C:/Users/Tester2/Desktop/TFG/Gráficos/Graf4_1.png")
+  nombre = file.path(dir_graficos, "Graf4_1.png"))
 gbp_inmigracion
 
 # ------------------------------------------------------------------------------
@@ -1382,7 +1390,7 @@ gbp_incremento <- grafico4(
   y_label = "Incremento neto de población",
   titulo="Distribución del incremento neto de población antes y después del PEUAT",
   subtitulo = "Comparación entre zonas tratadas y zona de control",
-  nombre = "C:/Users/Tester2/Desktop/TFG/Gráficos/Graf4_2.png")
+  nombre = file.path(dir_graficos, "Graf4_2.png"))
 gbp_incremento
 
 # ==============================================================================
@@ -1399,7 +1407,7 @@ gbp_gini <- grafico4(
   y_label = "Índice de Gini",
   titulo = "Distribución del índice de Gini antes y después del PEUAT",
   subtitulo = "Comparación entre zonas tratadas y zona de control",
-  nombre = "C:/Users/Tester2/Desktop/TFG/Gráficos/Graf5.png")
+  nombre = file.path(dir_graficos, "Graf5.png"))
 gbp_gini
 
 
@@ -1685,7 +1693,8 @@ EF_Barrios_Entire_QGIS <- barrios_qgis %>%
   arrange(NOM)
 
 # Exportar tabla para unir en QGIS
-write_csv(EF_Barrios_Entire_QGIS, "EF_Barrios_Entire_QGIS.csv")
+write_csv(EF_Barrios_Entire_QGIS, 
+          file.path(dir_datos, "EF_Barrios_Entire_QGIS.csv"))
 
 # Representación efectos fijos MES_ALTA
 # Extraemos los coeficientes correspondientes a los efectos fijos de MES_ALTA
@@ -1732,7 +1741,7 @@ ggEF_mes_alta <- ggplot(datos_ef_mes, aes(x = MES_ALTA, y = EFECTO_MES)) +
         legend.position = "none")
 
 ggEF_mes_alta
-ggsave("C:/Users/Tester2/Desktop/TFG/Gráficos/Graf6.png", ggEF_mes_alta,
+ggsave(file.path(dir_graficos, "Graf6.png"), ggEF_mes_alta,
        width = 10, height = 5.5, dpi = 500, bg = "transparent")
 
 # ==============================================================================
@@ -1980,7 +1989,7 @@ EF_Barrios_HC_QGIS <- barrios_qgis %>%
   arrange(NOM)
 
 # Exportamos la tabla para unir en QGIS
-write_csv(EF_Barrios_HC_QGIS, "EF_Barrios_HC_QGIS.csv")
+write_csv(EF_Barrios_HC_QGIS, file.path(dir_datos, "EF_Barrios_HC_QGIS.csv"))
 
 # Representación efectos fijos MES_ALTA
 # Extraemos los coeficientes correspondientes a los efectos fijos de MES_ALTA
@@ -2027,7 +2036,7 @@ ggEF_mes_altaHC <- ggplot(datos_ef_mes, aes(x = MES_ALTA, y = EFECTO_MES)) +
         legend.position = "none")
 
 ggEF_mes_altaHC
-ggsave("C:/Users/Tester2/Desktop/TFG/Gráficos/Graf7.png",ggEF_mes_altaHC,
+ggsave(file.path(dir_graficos, "Graf7.png"),ggEF_mes_altaHC,
        width = 10, height = 5.5, dpi = 500, bg = "transparent")
 
 # ==============================================================================
@@ -2204,7 +2213,7 @@ gr <- (p1 + p2) / (p3 + p4) +
                   plot.subtitle = element_text(hjust = 0.5, size = 14),
                   plot.background = element_rect(fill="transparent",color=NA)))
 gr
-ggsave("C:/Users/Tester2/Desktop/TFG/Gráficos/Graf8.png",gr,width = 11,
+ggsave(file.path(dir_graficos, "Graf8.png"),gr,width = 11,
        height = 8,dpi = 500, bg = "transparent")
 
 
@@ -2462,5 +2471,4 @@ graficos_validacion <- function(mod2e, mod2HC, nombre = NULL) {
            height = 7,dpi = 500,bg = "transparent")}
   return(grafico_validacion)}
 
-graficos_validacion(mod2e,mod2HC,
-                    "C:/Users/Tester2/Desktop/TFG/Gráficos/Graf9.png")
+graficos_validacion(mod2e,mod2HC,file.path(dir_graficos, "Graf9.png"))
